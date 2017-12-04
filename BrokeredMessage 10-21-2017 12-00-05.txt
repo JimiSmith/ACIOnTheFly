@@ -1,0 +1,7 @@
+<12:00:07> ----------------------------------------------------------------------------------------------------
+Message Received. MessageId=[148e913c36fa43369ce67d84af6033bb] SessionId=[NULL] Label=[NULL] Size=[319]
+Payload:
+{"test":"aci-on-the-fly-container45832-8"}
+Properties:
+ - Key=[ContainerId] Value=[aci-on-the-fly-container45832]
+ - Key=[$AzureWebJobsParentId] Value=[af3e0a6a-c58f-46c8-8835-20a54f8ba03c]
