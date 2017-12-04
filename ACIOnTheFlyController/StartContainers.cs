@@ -72,12 +72,7 @@ namespace ACIOnTheFlyController
                             {
                                 ["ServiceBusConnectionString"] = Environment.GetEnvironmentVariable("ServiceBusConnectionString"),
                                 ["OutQueueName"] = "output",
-                                ["ContainerId"] = containerId,
-                                ["ResourceGroup"] = resourceGroup,
-                                ["SubscriptionId"] = Environment.GetEnvironmentVariable("SubscriptionId"),
-                                ["SPClientId"] = Environment.GetEnvironmentVariable("SP.ClientId"),
-                                ["SPClientSecret"] = Environment.GetEnvironmentVariable("SP.ClientSecret"),
-                                ["SPTenantId"] = Environment.GetEnvironmentVariable("SP.TenantId")
+                                ["ContainerId"] = containerId
                             })
                             .Attach()
                         .Create();
