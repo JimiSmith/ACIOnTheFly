@@ -9,6 +9,7 @@ using Microsoft.Azure.WebJobs.Host;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
@@ -49,34 +50,39 @@ namespace ACIOnTheFlyController
                 .GetByResourceGroup("common", "jimismith");
             const string resourceGroup = "aci-experiment";
             await EnsureResourceGroup(azure, resourceGroup);
-            for (int i = 0; i < count; i++)
-            {
-                var containerId = SdkContext.RandomResourceName("aci-test-v3", 20);
-                var acrCredentials = await azureRegistry.GetCredentialsAsync();
-                var prop = azure.ContainerGroups.Manager.Inner.GetType().GetProperty("ApiVersion");
-                prop.SetValue(azure.ContainerGroups.Manager.Inner, "2017-10-01-preview");
-                azure.ContainerGroups
-                        .Define(containerId)
-                        .WithRegion(Region.EuropeWest)
-                        .WithExistingResourceGroup(resourceGroup)
-                        .WithLinux()
-                        .WithRestartPolicy("OnFailure")
-                        .WithPrivateImageRegistry(azureRegistry.LoginServerUrl, acrCredentials.Username, acrCredentials.AccessKeys[AccessKeyType.Primary])
-                        .WithoutVolume()
-                        .DefineContainerInstance(containerId)
-                            .WithImage(containerImageName)
-                            .WithoutPorts()
-                            .WithCpuCoreCount(1)
-                            .WithMemorySizeInGB(1)
-                            .WithEnvironmentVariables(new Dictionary<string, string>
-                            {
-                                ["ServiceBusConnectionString"] = Environment.GetEnvironmentVariable("ServiceBusConnectionString"),
-                                ["OutQueueName"] = "output",
-                                ["ContainerId"] = containerId
-                            })
-                            .Attach()
-                        .Create();
-            }
+            var containerIdBase = SdkContext.RandomResourceName("aci-test-v3", 20);
+            await Task.WhenAll(
+                Enumerable.Range(1, count)
+                .Select(async c =>
+                {
+                    var containerId = $"{containerIdBase}-{c}";
+                    var acrCredentials = await azureRegistry.GetCredentialsAsync();
+                    var prop = azure.ContainerGroups.Manager.Inner.GetType().GetProperty("ApiVersion");
+                    prop.SetValue(azure.ContainerGroups.Manager.Inner, "2017-10-01-preview");
+                    await azure.ContainerGroups
+                            .Define(containerId)
+                            .WithRegion(Region.EuropeWest)
+                            .WithExistingResourceGroup(resourceGroup)
+                            .WithLinux()
+                            .WithRestartPolicy("OnFailure")
+                            .WithPrivateImageRegistry(azureRegistry.LoginServerUrl, acrCredentials.Username, acrCredentials.AccessKeys[AccessKeyType.Primary])
+                            .WithoutVolume()
+                            .DefineContainerInstance(containerId)
+                                .WithImage(containerImageName)
+                                .WithoutPorts()
+                                .WithCpuCoreCount(1)
+                                .WithMemorySizeInGB(1)
+                                .WithEnvironmentVariables(new Dictionary<string, string>
+                                {
+                                    ["ServiceBusConnectionString"] = Environment.GetEnvironmentVariable("ServiceBusConnectionString"),
+                                    ["OutQueueName"] = "output",
+                                    ["ContainerId"] = containerId
+                                })
+                                .Attach()
+                            .CreateAsync();
+                })
+            );
+            
             return req.CreateResponse(HttpStatusCode.OK, $"Started {count} containers");
         }
 
